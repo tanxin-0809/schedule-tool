@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="renderer" content="webkit"/>
+<meta name="force-rendering" content="webkit"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>日程管理系统</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'微软雅黑','Microsoft YaHei',Arial,sans-serif;background:#f0f4f8;padding:20px;color:#222;}
+
+/* ── 顶部标题区 ── */
+.page-header{background:linear-gradient(135deg,#1F4E79 0%,#2E75B6 100%);border-radius:12px 12px 0 0;padding:20px 28px 16px;color:#fff;}
+.page-header h1{font-size:20px;letter-spacing:1px;}
+.page-header .meta{font-size:12px;color:#c8ddee;margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* ── 主卡片 ── */
+.card{background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.12);overflow:hidden;margin-bottom:28px;}
+
+/* ── Tab 导航 ── */
+.tab-nav{display:flex;gap:0;border-bottom:2px solid #1F4E79;padding:0 20px;background:#f7fafd;flex-wrap:wrap;}
+.tab-btn{padding:10px 20px;border:none;background:none;font-size:13px;font-weight:600;color:#5b8db8;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
+.tab-btn:hover{color:#1F4E79;background:#eaf2fb;}
+.tab-btn.active{color:#1F4E79;border-bottom:3px solid #1F4E79;background:#fff;}
+.tab-content{padding:20px 24px;display:none;}
+.tab-content.active{display:block;}
+
+/* ── 工具栏 ── */
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.toolbar span{font-size:13px;color:#666;margin-right:4px;}
+.btn{padding:7px 16px;border-radius:6px;border:none;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600;transition:all .2s;}
+.btn-primary{background:#1F4E79;color:#fff;}
+.btn-primary:hover{background:#2E75B6;}
+.btn-success{background:#27AE60;color:#fff;}
+.btn-success:hover{background:#1e8449;}
+.btn-warn{background:#E67E22;color:#fff;}
+.btn-warn:hover{background:#ca6f1e;}
+.btn-gray{background:#eef2f7;color:#444;border:1px solid #d0dde8;}
+.btn-gray:hover{background:#e0e8f4;}
+.btn-danger{background:#C0392B;color:#fff;}
+.btn-danger:hover{background:#962D22;}
+
+/* ── 任务表格 ── */
+table{width:100%;border-collapse:collapse;}
+thead tr{background:#1F4E79;color:#fff;}
+thead th{padding:10px 8px;font-size:13px;font-weight:600;text-align:center;border:1px solid #3a6fa0;white-space:nowrap;}
+tbody tr:nth-child(odd){background:#EBF3FB;}
+tbody tr:nth-child(even){background:#fff;}
+tbody tr:hover{background:#d6eaf8;}
+td{padding:0;font-size:13px;border:1px solid #C8DBE8;vertical-align:middle;}
+td.num{text-align:center;font-weight:700;color:#1F4E79;width:44px;padding:8px 4px;background:#dce8f5;}
+td.fixed{padding:8px 10px;text-align:center;}
+
+/* ── 可编辑单元格 ── */
+.cell-input{width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;color:#222;padding:8px 10px;outline:none;resize:none;min-height:36px;line-height:1.5;}
+.cell-input:focus{background:#fff9e6;box-shadow:inset 0 0 0 2px #F7DC6F;}
+td:has(.cell-input):hover .cell-input{background:#fffbf0;}
+
+/* ── 表头日期输入框 ── */
+.meta-input{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-family:inherit;outline:none;}
+.meta-input:focus{background:rgba(255,255,255,0.3);}
+.meta-input::placeholder{color:rgba(255,255,255,0.5);}
+input.meta-input[type="text"]{width:160px;}
+input.meta-input[type="date"]{width:140px;}
+
+/* ── select 下拉 ── */
+.cell-select{width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;color:#222;padding:8px 6px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;}
+.cell-select:focus{background:#fff9e6;box-shadow:inset 0 0 0 2px #F7DC6F;}
+
+/* ── 状态着色 ── */
+td.s-inprog {background:#DDEBF7!important;}
+td.s-pending{background:#FEF9E7!important;}
+td.s-ongoing{background:#F3E5F5!important;}
+td.s-done   {background:#E8F8F5!important;}
+
+/* ── 优先级 ── */
+td.p-high .cell-select{color:#C0392B;font-weight:700;}
+td.p-mid  .cell-select{color:#E67E22;font-weight:600;}
+td.p-low  .cell-select{color:#27AE60;}
+
+/* ── 进度条 ── */
+.progress-wrapper{display:flex;align-items:center;gap:8px;padding:6px 10px;}
+.progress-bar{flex:1;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#27AE60,#1e8449);transition:width .3s;}
+.progress-text{min-width:40px;text-align:center;font-size:11px;color:#666;}
+
+/* ── tfoot ── */
+tfoot tr{background:#1F4E79;color:#fff;}
+tfoot td{padding:9px 10px;font-size:13px;font-weight:600;border:1px solid #3a6fa0;text-align:center;}
+
+/* ── 说明区 ── */
+.tip{font-size:12px;color:#888;margin-top:10px;padding:8px 12px;background:#f8fbff;border-radius:6px;border-left:3px solid #2E75B6;}
+.section-title{font-size:13px;font-weight:700;color:#1F4E79;margin-bottom:10px;padding-left:8px;border-left:3px solid #2E75B6;}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1F4E79;color:#fff;padding:10px 28px;border-radius:30px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;}
+#toast.show{opacity:1;}
+
+/* ══════════════════════════════════
+   每周日程管理（时间轴网格版 - 紧凑布局）
+══════════════════════════════════ */
+.timeline-wrap{overflow-x:auto;border:1px solid #C8DBE8;border-radius:6px;max-height:calc(100vh - 220px);overflow-y:auto;}
+
+/* 表头 */
+.timeline-header{
+  display:grid;
+  grid-template-columns:50px repeat(7, 1fr);
+  background:#1F4E79;
+  color:#fff;font-size:12px;font-weight:600;
+  text-align:center;
+  position:sticky;top:0;z-index:20;
+}
+.timeline-corner{
+  padding:6px 2px;border-right:1px solid #3a6fa0;
+  background:#163C5E;font-size:11px;
+}
+.timeline-day{
+  padding:6px 2px;border-right:1px solid #3a6fa0;
+}
+.timeline-day:last-child{border-right:none;}
+.timeline-day.today-col{background:#E67E22!important;}
+
+/* 时间轴主体 */
+.timeline-body{
+  display:grid;
+  grid-template-columns:50px repeat(7, 1fr);
+  background:#fff;
+}
+
+/* 时间刻度列 - 时间数字顶格显示，视觉上贴近上边框线 */
+.time-slot-label{
+  padding:2px 4px;text-align:center;font-size:12px;color:#666;
+  border-right:1px solid #e0e8f0;border-bottom:1px solid #e0e8f0;
+  background:#f7fafd;height:40px;display:flex;align-items:flex-start;justify-content:center;
+  padding-top:2px;
+}
+.time-slot-label.hour{border-top:1px solid #b0c8e0;background:#e8f0f8;font-weight:700;color:#1F4E79;}
+.time-slot-label.half{border-top:1px dashed #d0dde0;}
+.time-slot-label.lunch{background:#e8f5e9;color:#2e7d32;font-weight:700;} /* 午休时段 */
+.time-slot-label.lunch-row{background:#e8f5e9;color:#2e7d32;font-weight:700;height:40px;} /* 午休行左侧占位 */
+/* 13:00行：绿色上边框，标示午休结束 */
+.time-slot-label[data-lunch-end="1"],.day-col[data-lunch-end="1"]{border-top:1px solid #c8e6c9!important;}
+.time-slot-label.ot{background:#fff3e0;color:#e65100;font-weight:700;} /* 加班时段 */
+.time-slot-label.ot-row{background:#fff3e0;color:#e65100;font-weight:700;height:80px;} /* 加班单行 */
+
+/* 七天列的格子 */
+.day-col{
+  border-right:1px solid #e0e8f0;border-bottom:1px solid #e0e8f0;
+  position:relative;height:40px;background:#fff;
+}
+.day-col:last-child{border-right:none;}
+.day-col.today-col{background:#FFF5EE!important;}
+.day-col:hover{background:#f0f8ff;}
+.day-col.lunch{background:#f1f8e9;} /* 午休时段背景 */
+.day-col.lunch-row{background:#f1f8e9;height:80px;} /* 午休合并行 */
+.day-col.ot{background:#fff8e1;} /* 加班时段背景 */
+.day-col.ot-row{background:#fff8e1;height:80px;} /* 加班单行 */
+
+/* 午休合并单元格（横跨7列，与左侧12:00标签等高80px） */
+.lunch-merged-cell{
+  grid-column: span 7;
+  background:#e8f5e9;
+  border-top:1px solid #c8e6c9;
+  border-bottom:1px solid #c8e6c9;
+  border-right:none;
+  height:40px;
+  display:flex;align-items:center;justify-content:center;
+  color:#2e7d32;font-size:13px;font-weight:700;
+  letter-spacing:4px;
+  cursor:default;
+  position:relative;
+}
+.lunch-merged-cell:hover{background:#d4edda;}
+
+/* 日程条目（定位在时间格子上）*/
+.sch-event{
+  position:absolute;left:2px;right:2px;top:2px;bottom:2px;
+  background:#fff;border:1px solid #2E75B6;border-radius:3px;
+  font-size:12px;line-height:1.3;
+  box-shadow:0 1px 3px rgba(0,0,0,.1);
+  overflow:hidden;cursor:pointer;
+  z-index:5;
+  display:flex;flex-direction:column;
+  min-height:30px;
+}
+.sch-event:hover{box-shadow:0 2px 6px rgba(30,80,150,.25);z-index:10;}
+.sch-event.item-done{background:#c8e6c9;border-color:#4caf50;} /* 完成：绿色背景 */
+.sch-event.item-delayed{background:#ffcdd2;border-color:#ef5350;} /* 顺延：红色背景 */
+
+/* 日程内容 - 垂直居中 */
+.sch-event-content{
+  padding:2px 5px;overflow:hidden;flex:1;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+}
+.sch-event-content .time{
+  font-weight:700;color:#1F4E79;font-size:11px;white-space:nowrap;line-height:1.3;
+}
+.sch-event.item-done .time{color:#2e7d32;}
+.sch-event.item-delayed .time{color:#c62828;}
+.sch-event-content .text{
+  color:#333;word-break:break-word;font-size:12px;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.sch-event.item-done .text{color:#2e7d32;}
+
+/* 操作按钮 - 悬停时显示在日程右侧竖排，不遮挡内容 */
+.sch-event-actions{
+  display:none;position:absolute;top:2px;bottom:2px;right:2px;
+  flex-direction:column;gap:2px;justify-content:center;
+  background:transparent;padding:0;
+}
+.sch-event:hover .sch-event-actions{display:flex;}
+/* 悬停时内容区右侧留出按钮空间 */
+.sch-event:hover .sch-event-content{padding-right:26px;}
+.sch-event-btn{
+  padding:2px 4px;font-size:10px;border-radius:3px;
+  border:none;cursor:pointer;font-family:inherit;
+  line-height:1.4;white-space:nowrap;
+  box-shadow:0 1px 2px rgba(0,0,0,.15);
+}
+.sch-event-done{background:#27AE60;color:#fff;}
+.sch-event-edit{background:#2E75B6;color:#fff;}
+.sch-event-delay{background:#8E44AD;color:#fff;}
+.sch-event-del{background:#C0392B;color:#fff;}
+
+/* 添加日程的模态框 */
+#sch-modal{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.4);z-index:1000;justify-content:center;align-items:center;
+}
+#sch-modal.show{display:flex;}
+.sch-modal-box{
+  background:#fff;border-radius:8px;padding:24px;min-width:360px;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);
+}
+.sch-modal-box h3{margin:0 0 18px;font-size:18px;color:#1F4E79;}
+.sch-modal-row{margin-bottom:16px;}
+.sch-modal-row label{display:block;font-size:14px;color:#444;margin-bottom:6px;font-weight:600;}
+.sch-modal-row input,.sch-modal-row textarea{
+  width:100%;border:1px solid #d0dde8;border-radius:6px;
+  padding:10px 12px;font-family:inherit;font-size:15px;
+}
+.sch-modal-row input[type="time"]{width:120px;display:inline-block;font-size:15px;}
+.sch-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.sch-modal-actions button{padding:10px 20px;border-radius:6px;border:none;font-size:14px;cursor:pointer;font-weight:600;}
+.sch-modal-row input:focus,.sch-modal-row textarea:focus{
+  border-color:#2E75B6;outline:none;
+}
+.sch-modal-row input[type="time"]{width:100px;display:inline-block;}
+.sch-modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:15px;}
+.sch-modal-actions button{padding:6px 16px;border-radius:4px;border:none;font-size:12px;cursor:pointer;}
+.sch-modal-actions .btn-primary{background:#1F4E79;color:#fff;}
+.sch-modal-actions .btn-cancel{background:#eef2f7;color:#444;}
+
+/* 提醒设置样式 */
+.reminder-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;color:#444;}
+.reminder-toggle input[type="checkbox"]{width:18px;height:18px;cursor:pointer;}
+.reminder-options{margin-top:10px;padding:10px;background:#f8fafc;border-radius:6px;display:none;}
+.reminder-options.show{display:block;}
+.reminder-options label{font-size:13px;color:#666;margin-bottom:4px;display:block;}
+.reminder-options input[type="datetime-local"]{width:100%;padding:8px 10px;border:1px solid #d0dde8;border-radius:4px;font-size:14px;}
+
+/* 提醒通知弹窗 */
+#reminder-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:2000;justify-content:center;align-items:center;}
+#reminder-modal.show{display:flex;}
+.reminder-modal-box{background:#fff;border-radius:12px;padding:28px;min-width:360px;max-width:450px;box-shadow:0 12px 40px rgba(0,0,0,.3);text-align:center;animation:slideIn 0.3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+.reminder-modal-box .icon{font-size:48px;margin-bottom:12px;}
+.reminder-modal-box h3{margin:0 0 12px;font-size:20px;color:#1F4E79;}
+.reminder-modal-box .content{font-size:15px;color:#444;margin-bottom:20px;line-height:1.6;}
+.reminder-modal-box .time-info{font-size:13px;color:#888;margin-bottom:20px;padding:10px;background:#f8fafc;border-radius:6px;}
+.reminder-modal-box .actions{display:flex;gap:12px;justify-content:center;}
+.reminder-modal-box button{padding:12px 24px;border-radius:6px;border:none;font-size:14px;cursor:pointer;font-weight:600;}
+.reminder-modal-box .btn-ok{background:#27AE60;color:#fff;}
+.reminder-modal-box .btn-snooze{background:#eef2f7;color:#444;}
+
+@media print{
+  .toolbar,.tab-nav,.btn{display:none!important;}
+  .tab-content{display:block!important;}
+  .card{box-shadow:none;page-break-after:always;}
+  body{background:#fff;padding:0;}
+  .sch-event-actions{display:none!important;}
+  #sch-modal{display:none!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- 顶部标题 -->
+  <div class="page-header">
+    <h1>📋 日程管理系统</h1>
+    <div class="meta">
+      统计周期：<input type="text" class="meta-input" id="meta-period" placeholder="如：2026-03-23至2026-03-29"/>
+      &nbsp;|&nbsp;
+      制表日期：<input type="date" class="meta-input" id="meta-create-date"/>
+    </div>
+  </div>
+
+  <!-- Tab 导航 -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab(0)">📌 本周工作任务</button>
+    <button class="tab-btn" onclick="switchTab(1)">🗓️ 每周日程管理</button>
+  </div>
+
+  <!-- ══════════ Tab 0：本周工作任务 ══════════ -->
+  <div class="tab-content active" id="tab0">
+    <div class="toolbar">
+      <span>操作：</span>
+      <button class="btn btn-success" onclick="saveData()">💾 保存数据</button>
+      <button class="btn btn-primary" onclick="loadData()">📂 读取数据</button>
+      <button class="btn btn-primary" onclick="addTaskRow()">➕ 添加任务</button>
+      <button class="btn btn-gray" onclick="window.print()">🖨️ 打印</button>
+      <button class="btn btn-warn" onclick="exportCSV('task-table','本周工作任务')">📥 导出CSV</button>
+    </div>
+    <table id="task-table">
+      <thead>
+        <tr>
+          <th style="width:44px">序号</th>
+          <th style="width:200px;text-align:left">任务名称</th>
+          <th style="width:120px">完成时间</th>
+          <th style="width:80px">紧急度</th>
+          <th style="width:140px">进展</th>
+          <th>备注</th>
+          <th style="width:60px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="task-tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">本周任务汇总：共 <span id="task-count">0</span> 项</td>
+          <td colspan="4" id="summary-text">统计中...</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="tip">💡 所有单元格均可直接点击编辑。填写完成后点击「保存数据」，下次打开会自动加载。</div>
+  </div>
+
+  <!-- ══════════ Tab 1：每周日程管理 ══════════ -->
+  <div class="tab-content" id="tab1">
+    <div class="toolbar">
+      <span>操作：</span>
+      <button class="btn btn-success" onclick="saveData()">💾 保存数据</button>
+      <button class="btn btn-primary" onclick="loadData()">📂 读取数据</button>
+      <button class="btn btn-primary" onclick="exportJSON()">📤 导出JSON</button>
+      <button class="btn btn-primary" onclick="document.getElementById('json-input').click()">📥 导入JSON</button>
+      <button class="btn btn-warn" onclick="exportScheduleCSV()">📥 导出CSV</button>
+      <button class="btn btn-danger" onclick="clearSchedule()">🗑️ 清空日程</button>
+    </div>
+    <p class="section-title">每周日程管理</p>
+    <div class="timeline-wrap" id="timeline-wrap">
+      <!-- 表头：时间列 + 七天 -->
+      <div class="timeline-header">
+        <div class="timeline-corner">时间</div>
+        <div class="timeline-day" id="th-mon">周一</div>
+        <div class="timeline-day" id="th-tue">周二</div>
+        <div class="timeline-day" id="th-wed">周三</div>
+        <div class="timeline-day" id="th-thu">周四</div>
+        <div class="timeline-day" id="th-fri">周五</div>
+        <div class="timeline-day" id="th-sat">周六</div>
+        <div class="timeline-day" id="th-sun">周日</div>
+      </div>
+      <!-- 时间轴主体：左侧刻度 + 七天列 -->
+      <div class="timeline-body" id="timeline-body">
+        <!-- 由 JS 生成时间行和日程 -->
+      </div>
+    </div>
+    <div class="tip">💡 点击任意格子添加日程。相同时间在不同天会在同一水平线对齐显示。悬停日程可看到操作按钮：<b>✓ 完成</b>、<b>→ 顺延</b>、<b>✕ 删除</b>。12:00-13:00为午休时段，17:30后为加班时段。今日列橙色高亮。</div>
+  </div>
+</div>
+
+<input type="file" id="json-input" accept=".json" style="display:none;" onchange="importJSON(this)"/>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  全局状态
+// ══════════════════════════════════════════════════
+let taskRowCount = 0;
+
+const SCH_DAYS     = ['mon','tue','wed','thu','fri','sat','sun'];
+const SCH_DAY_NAMES= ['周一','周二','周三','周四','周五','周六','周日'];
+
+// 日程数据：每天一个数组，每条 { id, startTime, endTime, content, done, delayed }
+const schData = {};
+SCH_DAYS.forEach(d => schData[d] = []);
+let schItemId = 0;
+
+// ══════════════════════════════════════════════════
+//  初始化
+// ══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('meta-create-date').value = today;
+  highlightToday();
+  initScheduleCols();
+  try {
+    if (localStorage.getItem('schedule_manager_data')) {
+      loadData();
+    }
+  } catch(e) { /* localStorage 不可用时跳过，不影响页面正常使用 */ }
+  // 恢复所有提醒
+  setTimeout(restoreReminders, 1000);
+});
+
+// ══════════════════════════════════════════════════
+//  Tab 切换
+// ══════════════════════════════════════════════════
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-content').forEach((c,i) => c.classList.toggle('active', i===idx));
+}
+
+// ══════════════════════════════════════════════════
+//  Toast
+// ══════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ══════════════════════════════════════════════════
+//  本周工作任务
+// ══════════════════════════════════════════════════
+function addTaskRow() {
+  taskRowCount++;
+  const tbody = document.getElementById('task-tbody');
+  const tr = document.createElement('tr');
+  tr.id = `task-row-${taskRowCount}`;
+  const id = taskRowCount;
+  tr.innerHTML = `
+    <td class="num">${id}</td>
+    <td><input class="cell-input" data-key="t${id}_name" placeholder="" style="text-align:left"/></td>
+    <td><input class="cell-input" data-key="t${id}_date" type="date" style="text-align:center"/></td>
+    <td id="t${id}_urgency_td" class="p-mid">
+      <select class="cell-select" data-key="t${id}_urgency" onchange="updateUrgency(this)">
+        <option value="高">高</option>
+        <option value="中" selected>中</option>
+        <option value="低">低</option>
+      </select>
+    </td>
+    <td>
+      <div class="progress-wrapper">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill-${id}" style="width:0%"></div></div>
+        <div class="progress-text" id="progress-text-${id}">0%</div>
+      </div>
+      <input type="range" min="0" max="100" value="0"
+             oninput="updateProgress(this,${id})"
+             data-key="t${id}_progress"
+             style="width:100%;margin-top:4px;">
+    </td>
+    <td><textarea class="cell-input" data-key="t${id}_note" rows="2" placeholder=""></textarea></td>
+    <td class="fixed">
+      <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteTaskRow(${id})">删除</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+  updateTaskCount();
+  updateSummary();
+}
+
+function deleteTaskRow(id) {
+  if (!confirm('确定要删除这个任务吗？')) return;
+  const row = document.getElementById(`task-row-${id}`);
+  if (row) { row.remove(); updateTaskCount(); updateSummary(); }
+}
+
+function updateTaskCount() {
+  document.getElementById('task-count').textContent =
+    document.getElementById('task-tbody').querySelectorAll('tr').length;
+}
+
+function updateSummary() {
+  const sels = document.querySelectorAll('#task-tbody .cell-select[data-key$="_urgency"]');
+  const cnt = {};
+  sels.forEach(s => { cnt[s.value] = (cnt[s.value]||0)+1; });
+  const parts = Object.entries(cnt).map(([k,v]) => `${k} ${v}项`);
+  document.getElementById('summary-text').textContent = parts.length ? parts.join('　|　') : '暂无任务';
+}
+
+function updateUrgency(sel) {
+  const key  = sel.dataset.key.replace('_urgency','');
+  const td   = document.getElementById(key + '_urgency_td');
+  if (!td) return;
+  td.className = sel.value==='高' ? 'p-high' : sel.value==='低' ? 'p-low' : 'p-mid';
+  updateSummary();
+}
+
+function updateProgress(input, id) {
+  const v = input.value;
+  const fill = document.getElementById('progress-fill-' + id);
+  const text = document.getElementById('progress-text-' + id);
+  if (fill) fill.style.width = v + '%';
+  if (text) text.textContent = v + '%';
+}
+
+// ══════════════════════════════════════════════════
+//  每周日程管理（时间轴网格）
+// ══════════════════════════════════════════════════
+
+// 时间刻度：8:30 - 17:30 工作时间 + 17:30-21:00 加班时段，每30分钟一行
+const WORK_START = {h:8, m:30};
+const WORK_END = {h:17, m:30};
+const OT_END = {h:21, m:0};
+const SLOT_MINUTES = 30;
+
+/* 初始化时间轴网格 */
+function initScheduleCols() {
+  const body = document.getElementById('timeline-body');
+  body.innerHTML = '';
+
+  // 生成工作时间行（8:30 - 17:30）
+  // 12:00 这一行：左侧显示"12:00"，右侧7列合并为午休块（高80px），跳过12:30，13:00正常显示
+  let current = new Date(2000, 0, 1, WORK_START.h, WORK_START.m);
+  const workEnd = new Date(2000, 0, 1, WORK_END.h, WORK_END.m);
+
+  while (current <= workEnd) {
+    const h = current.getHours();
+    const m = current.getMinutes();
+    const timeStr = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+    const isHour = m === 0;
+
+    // 12:30：直接跳过，不生成任何行
+    if (h === 12 && m === 30) {
+      current.setMinutes(current.getMinutes() + SLOT_MINUTES);
+      continue;
+    }
+
+    // 12:00：左侧显示"12:00"（高80px），右侧7列合并为午休块
+    if (h === 12 && m === 0) {
+      // 左侧时间标签：12:00，高80px
+      const label = document.createElement('div');
+      label.className = 'time-slot-label hour';
+      label.style.cssText = 'height:40px;background:#e8f5e9;color:#2e7d32;font-weight:700;border-top:1px solid #b0c8e0;border-bottom:1px solid #c8e6c9;align-items:flex-start;padding-top:2px;';
+      label.textContent = '12:00';
+      body.appendChild(label);
+
+      // 右侧7列合并午休块
+      const lunchCell = document.createElement('div');
+      lunchCell.className = 'lunch-merged-cell';
+      lunchCell.id = 'lunch-merged-row';
+      lunchCell.dataset.time = 'lunch';
+      lunchCell.innerHTML = '午　休';
+      lunchCell.title = '午休 12:00—13:00';
+      body.appendChild(lunchCell);
+
+      current.setMinutes(current.getMinutes() + SLOT_MINUTES);
+      continue;
+    }
+
+    // 普通时间行
+    const label = document.createElement('div');
+    label.className = 'time-slot-label ' + (isHour ? 'hour' : 'half');
+    label.textContent = timeStr;
+    // 13:00 行加绿色上边框
+    if (h === 13 && m === 0) label.dataset.lunchEnd = '1';
+    body.appendChild(label);
+
+    SCH_DAYS.forEach(day => {
+      const cell = document.createElement('div');
+      cell.className = 'day-col';
+      cell.dataset.day = day;
+      cell.dataset.time = timeStr;
+      // 13:00 格子加绿色上边框
+      if (h === 13 && m === 0) cell.dataset.lunchEnd = '1';
+      cell.onclick = () => openSchModal(day, timeStr);
+      body.appendChild(cell);
+    });
+
+    current.setMinutes(current.getMinutes() + SLOT_MINUTES);
+  }
+
+  // 加班时段（17:30 - 21:00）- 合并为一行
+  const otLabel = document.createElement('div');
+  otLabel.className = 'time-slot-label ot-row';
+  otLabel.textContent = '加班';
+  body.appendChild(otLabel);
+
+  SCH_DAYS.forEach(day => {
+    const cell = document.createElement('div');
+    cell.className = 'day-col ot-row';
+    cell.dataset.day = day;
+    cell.dataset.time = 'ot';
+    cell.dataset.otRange = '17:30-21:00';
+    cell.onclick = () => openSchModal(day, '17:30');
+    body.appendChild(cell);
+  });
+
+  // 渲染所有日程
+  renderAllEvents();
+  highlightToday();
+}
+
+/* 渲染所有日程到对应位置 */
+function renderAllEvents() {
+  // 清空现有日程元素
+  document.querySelectorAll('.sch-event').forEach(el => el.remove());
+
+  SCH_DAYS.forEach(day => {
+    schData[day].forEach(item => renderEvent(day, item));
+  });
+}
+
+/* 渲染单个日程事件 */
+function renderEvent(day, item) {
+  if (!item.startTime) return; // 没有时间无法定位
+
+  // 判断是否在加班时段（17:30之后）或午休时段（12:00-13:00）
+  const [sh, sm] = item.startTime.split(':').map(Number);
+  const isOvertime = (sh > 17) || (sh === 17 && sm >= 30);
+  const isLunch = (sh === 12 && sm >= 0 && sm < 60);
+  
+  // 找到对应的格子
+  let startCell;
+  if (isOvertime) {
+    startCell = document.querySelector('.day-col[data-day="' + day + '"][data-time="ot"]');
+  } else if (isLunch) {
+    // 午休时段统一显示在午休格子里
+    startCell = document.querySelector('.day-col[data-day="' + day + '"][data-time="lunch"]');
+  } else {
+    startCell = findCell(day, item.startTime);
+  }
+  if (!startCell) return;
+
+  const ev = document.createElement('div');
+  ev.className = 'sch-event' +
+    (item.done ? ' item-done' : '') +
+    (item.delayed ? ' item-delayed' : '');
+  ev.dataset.id = item.id;
+  ev.dataset.day = day;
+
+  // 计算位置和高度
+  const pos = calculateEventPosition(item.startTime, item.endTime, isOvertime, isLunch);
+  ev.style.top = pos.top + 'px';
+  ev.style.height = pos.height + 'px';
+
+  // 内容
+  const content = document.createElement('div');
+  content.className = 'sch-event-content';
+  const fromLabel = item.delayedFromDay
+    ? `<span style="font-size:9px;color:#e65100;margin-left:3px;">←顺延</span>` : '';
+  content.innerHTML = `<div class="time">${formatTime(item.startTime)}${item.endTime ? '—' + formatTime(item.endTime) : ''}${fromLabel}</div><div class="text">${escapeHtml(item.content || '')}</div>`;
+  ev.appendChild(content);
+
+  // 操作按钮
+  const actions = document.createElement('div');
+  actions.className = 'sch-event-actions';
+
+  const doneBtn = document.createElement('button');
+  doneBtn.className = 'sch-event-btn sch-event-done';
+  doneBtn.textContent = item.done ? '↩' : '✓';
+  doneBtn.title = item.done ? '取消完成' : '标记完成';
+  doneBtn.onclick = (e) => { e.stopPropagation(); toggleEventDone(day, item.id); };
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'sch-event-btn sch-event-edit';
+  editBtn.textContent = '✎';
+  editBtn.title = '编辑';
+  editBtn.onclick = (e) => { e.stopPropagation(); openSchModal(day, null, item); };
+
+  const delayBtn = document.createElement('button');
+  delayBtn.className = 'sch-event-btn sch-event-delay';
+  if (item.delayed) {
+    delayBtn.textContent = '←';
+    delayBtn.title = '撤销顺延';
+    delayBtn.style.background = '#E67E22';
+    delayBtn.onclick = (e) => { e.stopPropagation(); undoDelayEvent(day, item.id); };
+  } else {
+    delayBtn.textContent = '→';
+    delayBtn.title = '顺延至下一天';
+    delayBtn.onclick = (e) => { e.stopPropagation(); delayEvent(day, item.id); };
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'sch-event-btn sch-event-del';
+  delBtn.textContent = '✕';
+  delBtn.title = '删除';
+  delBtn.onclick = (e) => { e.stopPropagation(); deleteEvent(day, item.id); };
+
+  actions.appendChild(doneBtn);
+  actions.appendChild(editBtn);
+  actions.appendChild(delayBtn);
+  actions.appendChild(delBtn);
+  ev.appendChild(actions);
+
+  // 点击日程块本体也能打开编辑（阻止冒泡到父格子）
+  ev.onclick = (e) => {
+    e.stopPropagation();
+    if (e.target.closest('.sch-event-actions')) return;
+    openSchModal(day, null, item);
+  };
+
+  startCell.appendChild(ev);
+}
+
+/* 查找对应时间和天的格子 */
+function findCell(day, timeStr) {
+  const cells = document.querySelectorAll('.day-col[data-day="' + day + '"]');
+  
+  for (let cell of cells) {
+    if (cell.dataset.time === timeStr) {
+      return cell;
+    }
+  }
+  
+  // 如果没有精确匹配，尝试找到最接近的格子
+  let bestCell = null;
+  let bestDiff = Infinity;
+  
+  for (let cell of cells) {
+    // 排除特殊行（加班行、午休合并行）
+    const t = cell.dataset.time;
+    if (!t || t === 'ot' || t === 'lunch') continue;
+    
+    // 计算时间差（分钟）
+    const cellTime = cell.dataset.time;
+    const [ch, cm] = cellTime.split(':').map(Number);
+    const [th, tm] = timeStr.split(':').map(Number);
+    const cellMinutes = ch * 60 + cm;
+    const targetMinutes = th * 60 + tm;
+    const diff = Math.abs(cellMinutes - targetMinutes);
+    
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestCell = cell;
+    }
+  }
+  
+  return bestCell;
+}
+
+/* 计算日程的 top 和 height（相对于格子） */
+function calculateEventPosition(startTime, endTime, isOvertime, isLunch) {
+  const rowHeight = 40; // 每行40px
+  const otRowHeight = 80; // 加班行高度
+  const lunchRowHeight = 80; // 午休行高度
+
+  // 午休时段：在合并的午休格子里按时间分布
+  if (isLunch) {
+    const [sh, sm] = startTime.split(':').map(Number);
+    const startMinutes = (sh - 12) * 60 + sm; // 12:00为起点
+    const lunchTotalMinutes = 60; // 12:00-13:00 = 60分钟
+    
+    let durationMinutes = 30; // 默认30分钟
+    if (endTime) {
+      const [eh, em] = endTime.split(':').map(Number);
+      durationMinutes = (eh - sh) * 60 + (em - sm);
+      if (durationMinutes < 30) durationMinutes = 30;
+    }
+    
+    // 在午休格子内计算相对位置
+    const top = (startMinutes / lunchTotalMinutes) * lunchRowHeight;
+    const height = Math.max(28, (durationMinutes / lunchTotalMinutes) * lunchRowHeight - 4);
+    
+    return { top, height };
+  }
+
+  // 加班时段：在合并的加班格子里按时间分布
+  if (isOvertime) {
+    const [sh, sm] = startTime.split(':').map(Number);
+    const startMinutes = (sh - 17) * 60 + sm - 30; // 17:30为起点
+    const otTotalMinutes = 210; // 17:30-21:00 = 210分钟
+    
+    let durationMinutes = 30; // 默认30分钟
+    if (endTime) {
+      const [eh, em] = endTime.split(':').map(Number);
+      durationMinutes = (eh - sh) * 60 + (em - sm);
+      if (durationMinutes < 30) durationMinutes = 30;
+    }
+    
+    // 在加班格子内计算相对位置
+    const top = (startMinutes / otTotalMinutes) * otRowHeight;
+    const height = Math.max(28, (durationMinutes / otTotalMinutes) * otRowHeight - 4);
+    
+    return { top, height };
+  }
+
+  // 工作时间：跨越多行的日程
+  let durationMinutes = 30; // 默认30分钟
+  if (endTime) {
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    durationMinutes = (eh - sh) * 60 + (em - sm);
+    if (durationMinutes < 30) durationMinutes = 30;
+  }
+
+  const height = Math.max(30, (durationMinutes / SLOT_MINUTES) * rowHeight - 4);
+
+  return { top: 0, height };
+}
+
+/* 格式化时间显示 */
+function formatTime(timeStr) {
+  return timeStr.substring(0, 5);
+}
+
+/* HTML 转义 */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/* 标记完成/取消 */
+function toggleEventDone(day, id) {
+  const item = schData[day].find(i => i.id === id);
+  if (item) { item.done = !item.done; renderAllEvents(); autoSaveSchData(); }
+}
+
+/* 顺延到下一天（原日程保留，标记为已顺延；下一天创建副本） */
+function delayEvent(day, id) {
+  const idx = SCH_DAYS.indexOf(day);
+  if (idx >= SCH_DAYS.length - 1) { showToast('已是周日，无法顺延'); return; }
+  const item = schData[day].find(i => i.id === id);
+  if (!item) return;
+
+  const nextDay = SCH_DAYS[idx + 1];
+  const copyId = ++schItemId;
+
+  // 在下一天创建副本，记录来源信息
+  const newItem = {
+    ...item,
+    id: copyId,
+    delayed: false,
+    done: false,
+    delayedFromDay: day,       // 来源天
+    delayedFromId: id,         // 来源ID
+  };
+  schData[nextDay].push(newItem);
+
+  // 原日程标记为已顺延，并记录目标副本
+  item.delayed = true;
+  item.delayedToDay = nextDay;
+  item.delayedToId = copyId;
+
+  renderAllEvents();
+  autoSaveSchData();
+  showToast('已顺延至' + SCH_DAY_NAMES[idx + 1] + '，点击 ← 可撤销');
+}
+
+/* 撤销顺延（删除下一天副本，恢复原日程状态） */
+function undoDelayEvent(day, id) {
+  const item = schData[day].find(i => i.id === id);
+  if (!item || !item.delayed) return;
+
+  const targetDay = item.delayedToDay;
+  const targetId = item.delayedToId;
+
+  if (targetDay && targetId) {
+    // 删除目标天的副本
+    schData[targetDay] = schData[targetDay].filter(i => i.id !== targetId);
+  }
+
+  // 恢复原日程状态
+  item.delayed = false;
+  delete item.delayedToDay;
+  delete item.delayedToId;
+
+  renderAllEvents();
+  autoSaveSchData();
+  showToast('✅ 已撤销顺延');
+}
+
+/* 删除日程 */
+function deleteEvent(day, id) {
+  if (!confirm('确定删除这条日程？')) return;
+  cancelReminder(id);
+  try {
+    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const filtered = reminders.filter(r => r.id !== id);
+    localStorage.setItem('schedule_reminders', JSON.stringify(filtered));
+  } catch(e) {}
+  schData[day] = schData[day].filter(i => i.id !== id);
+  renderAllEvents();
+  autoSaveSchData();
+}
+
+/* 打开添加/编辑日程的模态框 */
+let editingItem = null;
+let editingDay = null;
+
+function openSchModal(day, timeStr, item) {
+  editingDay = day;
+  editingItem = item || null;
+
+  let modal = document.getElementById('sch-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'sch-modal';
+    modal.innerHTML = `
+      <div class="sch-modal-box">
+        <h3 id="sch-modal-title">添加日程</h3>
+        <div class="sch-modal-row">
+          <label>时间</label>
+          <input type="time" id="sch-modal-start" style="width:120px"/> —
+          <input type="time" id="sch-modal-end" style="width:120px"/>
+        </div>
+        <div class="sch-modal-row">
+          <label>内容</label>
+          <textarea id="sch-modal-content" rows="3" placeholder="输入日程内容..."></textarea>
+        </div>
+        <div class="sch-modal-row">
+          <label class="reminder-toggle">
+            <input type="checkbox" id="sch-modal-reminder" onchange="toggleReminderOptions()">
+            <span>开启提醒</span>
+          </label>
+          <div class="reminder-options" id="reminder-options">
+            <label>提醒时间</label>
+            <input type="datetime-local" id="sch-modal-reminder-time"/>
+          </div>
+        </div>
+        <div class="sch-modal-actions">
+          <button class="btn-cancel" onclick="closeSchModal()">取消</button>
+          <button class="btn-primary" onclick="saveSchModal()">保存</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) closeSchModal(); };
+  }
+
+  document.getElementById('sch-modal-title').textContent = item ? '编辑日程' : '添加日程';
+  document.getElementById('sch-modal-start').value = item ? item.startTime : (timeStr || '');
+  document.getElementById('sch-modal-end').value = item ? (item.endTime || '') : '';
+  document.getElementById('sch-modal-content').value = item ? (item.content || '') : '';
+  
+  // 提醒设置
+  const reminderCheckbox = document.getElementById('sch-modal-reminder');
+  const reminderOptions = document.getElementById('reminder-options');
+  const reminderTimeInput = document.getElementById('sch-modal-reminder-time');
+  
+  if (item && item.reminderEnabled) {
+    reminderCheckbox.checked = true;
+    reminderOptions.classList.add('show');
+    reminderTimeInput.value = item.reminderTime || '';
+  } else {
+    reminderCheckbox.checked = false;
+    reminderOptions.classList.remove('show');
+    // 默认提醒时间为日程开始前15分钟
+    const defaultReminder = getDefaultReminderTime(timeStr || '09:00');
+    reminderTimeInput.value = defaultReminder;
+  }
+
+  modal.classList.add('show');
+}
+
+function toggleReminderOptions() {
+  const checkbox = document.getElementById('sch-modal-reminder');
+  const options = document.getElementById('reminder-options');
+  if (checkbox.checked) {
+    options.classList.add('show');
+  } else {
+    options.classList.remove('show');
+  }
+}
+
+function getDefaultReminderTime(timeStr) {
+  // 获取当前日期 + 指定时间，减去15分钟作为默认提醒时间
+  const now = new Date();
+  const [h, m] = timeStr.split(':').map(Number);
+  
+  // 创建提醒时间（日程开始时间 - 15分钟）
+  let reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m - 15);
+  
+  // 如果提醒时间已过，使用明天的这个时间
+  if (reminderTime.getTime() < now.getTime()) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    reminderTime = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), h, m - 15);
+  }
+  
+  // 格式化为 datetime-local 格式
+  return reminderTime.toISOString().slice(0, 16);
+}
+
+function closeSchModal() {
+  document.getElementById('sch-modal').classList.remove('show');
+  editingItem = null;
+  editingDay = null;
+}
+
+function saveSchModal() {
+  const start = document.getElementById('sch-modal-start').value;
+  const end = document.getElementById('sch-modal-end').value;
+  const content = document.getElementById('sch-modal-content').value.trim();
+  const reminderEnabled = document.getElementById('sch-modal-reminder')?.checked || false;
+  const reminderTime = document.getElementById('sch-modal-reminder-time')?.value || null;
+
+  if (!start) { showToast('请填写开始时间'); return; }
+
+  if (editingItem) {
+    editingItem.startTime = start;
+    editingItem.endTime = end;
+    editingItem.content = content;
+    editingItem.reminderEnabled = reminderEnabled;
+    editingItem.reminderTime = reminderTime;
+    editingItem._day = editingDay; // 保存天信息
+    // 更新提醒
+    if (reminderEnabled && reminderTime) {
+      scheduleReminder(editingItem);
+    } else {
+      cancelReminder(editingItem.id);
+    }
+  } else {
+    const newItem = {
+      id: ++schItemId,
+      startTime: start,
+      endTime: end,
+      content: content,
+      done: false,
+      delayed: false,
+      reminderEnabled: reminderEnabled,
+      reminderTime: reminderTime,
+      _day: editingDay // 保存天信息
+    };
+    schData[editingDay].push(newItem);
+    // 设置提醒
+    if (reminderEnabled && reminderTime) {
+      scheduleReminder(newItem);
+    }
+  }
+
+  closeSchModal();
+  renderAllEvents();
+  autoSaveSchData();
+  showToast('日程已保存');
+}
+
+/* 清空所有日程 */
+function clearSchedule() {
+  if (!confirm('确定要清空所有日程内容吗？此操作不可撤销。')) return;
+  SCH_DAYS.forEach(d => { 
+    // 取消所有提醒
+    schData[d].forEach(item => cancelReminder(item.id));
+    schData[d] = []; 
+  });
+  schItemId = 0;
+  renderAllEvents();
+  showToast('🗑️ 日程已清空');
+}
+
+// ══════════════════════════════════════════════════
+//  日程提醒功能
+// ══════════════════════════════════════════════════
+
+// 存储所有定时器
+const reminderTimers = {};
+
+// 检查并请求通知权限（兼容旧版浏览器）
+function requestNotificationPermission() {
+  try {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') return;
+    if (Notification.permission === 'denied') return;
+    // 兼容旧版（返回字符串而非Promise）
+    const result = Notification.requestPermission(function() {});
+    if (result && typeof result.then === 'function') {
+      result.then(function() {}).catch(function() {});
+    }
+  } catch(e) { /* 静默忽略，不影响其他功能 */ }
+}
+
+/* 设置提醒 */
+function scheduleReminder(item) {
+  if (!item.reminderEnabled || !item.reminderTime) return;
+  
+  // 取消之前的提醒
+  cancelReminder(item.id);
+  
+  const reminderDate = new Date(item.reminderTime);
+  const now = new Date();
+  const delay = reminderDate.getTime() - now.getTime();
+  
+  if (delay > 0) {
+    reminderTimers[item.id] = setTimeout(() => {
+      showReminderNotification(item);
+    }, delay);
+    
+    // 保存提醒信息到 localStorage，以便页面关闭后也能触发
+    saveReminderToStorage(item);
+    console.log(`已设置提醒: ${item.content} 将在 ${reminderDate.toLocaleString()} 提醒`);
+  }
+}
+
+/* 保存提醒到 localStorage */
+function saveReminderToStorage(item) {
+  try {
+    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const filtered = reminders.filter(r => r.id !== item.id);
+    filtered.push({
+      id: item.id,
+      day: item._day,
+      content: item.content,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      reminderTime: item.reminderTime
+    });
+    localStorage.setItem('schedule_reminders', JSON.stringify(filtered));
+  } catch(e) {}
+}
+
+/* 检查待触发的提醒 */
+function checkStoredReminders() {
+  try {
+    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const now = new Date();
+    const toKeep = [];
+    reminders.forEach(reminder => {
+      const reminderDate = new Date(reminder.reminderTime);
+      if (reminderDate <= now) {
+        showBrowserNotification(reminder);
+        if (reminderTimers[reminder.id]) {
+          clearTimeout(reminderTimers[reminder.id]);
+          delete reminderTimers[reminder.id];
+        }
+      } else {
+        toKeep.push(reminder);
+      }
+    });
+    localStorage.setItem('schedule_reminders', JSON.stringify(toKeep));
+  } catch(e) {}
+}
+
+/* 显示浏览器原生通知 */
+function showBrowserNotification(reminder) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const notification = new Notification('📋 日程提醒', {
+      body: reminder.content,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📋</text></svg>',
+      tag: 'reminder-' + reminder.id,
+      requireInteraction: true
+    });
+    
+    notification.onclick = () => {
+      notification.close();
+      window.focus();
+    };
+    
+    // 5秒后自动关闭
+    setTimeout(() => notification.close(), 5000);
+  }
+}
+
+/* 取消提醒 */
+function cancelReminder(itemId) {
+  if (reminderTimers[itemId]) {
+    clearTimeout(reminderTimers[itemId]);
+    delete reminderTimers[itemId];
+  }
+}
+
+/* 显示提醒通知弹窗 */
+function showReminderNotification(item) {
+  // 播放提示音（如果浏览器支持）
+  playNotificationSound();
+  
+  // 确保有天信息
+  if (!item._day) {
+    item._day = findItemDay(item.id);
+  }
+  
+  // 显示浏览器原生通知
+  showBrowserNotification(item);
+  
+  // 创建提醒弹窗
+  let modal = document.getElementById('reminder-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'reminder-modal';
+    document.body.appendChild(modal);
+  }
+  
+  const dayName = item._day ? SCH_DAY_NAMES[SCH_DAYS.indexOf(item._day)] : '';
+  
+  modal.innerHTML = `
+    <div class="reminder-modal-box">
+      <div class="icon">⏰</div>
+      <h3>日程提醒</h3>
+      <div class="content">${escapeHtml(item.content || '无内容')}</div>
+      <div class="time-info">${dayName} ${formatTime(item.startTime)}${item.endTime ? ' - ' + formatTime(item.endTime) : ''}</div>
+      <div class="actions">
+        <button class="btn-ok" onclick="closeReminderModal(${item.id})">知道了</button>
+        <button class="btn-snooze" onclick="snoozeReminder(${item.id})">稍后提醒 (5分钟)</button>
+      </div>
+    </div>
+  `;
+  
+  modal.classList.add('show');
+  modal.onclick = (e) => { if (e.target === modal) closeReminderModal(item.id); };
+}
+
+/* 查找日程所属的天 */
+function findItemDay(itemId) {
+  for (const day of SCH_DAYS) {
+    const item = schData[day].find(i => i.id === itemId);
+    if (item) {
+      item._day = day; // 保存天信息
+      return day;
+    }
+  }
+  return null;
+}
+
+/* 关闭提醒弹窗 */
+function closeReminderModal(itemId) {
+  const modal = document.getElementById('reminder-modal');
+  if (modal) modal.classList.remove('show');
+  if (reminderTimers[itemId]) {
+    clearTimeout(reminderTimers[itemId]);
+    delete reminderTimers[itemId];
+  }
+  try {
+    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const filtered = reminders.filter(r => r.id !== itemId);
+    localStorage.setItem('schedule_reminders', JSON.stringify(filtered));
+  } catch(e) {}
+}
+
+/* 稍后提醒 */
+function snoozeReminder(itemId) {
+  const day = findItemDay(itemId);
+  if (!day) return;
+  
+  const item = schData[day].find(i => i.id === itemId);
+  if (!item) return;
+  
+  closeReminderModal(itemId);
+  
+  // 5分钟后再次提醒
+  const snoozeTime = new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16);
+  item.reminderTime = snoozeTime;
+  
+  // 保存到 localStorage
+  saveReminderToStorage(item);
+  
+  setTimeout(() => {
+    showReminderNotification(item);
+  }, 5 * 60 * 1000);
+  
+  showToast('⏰ 已设置为5分钟后再次提醒');
+}
+
+/* 播放提示音 */
+function playNotificationSound() {
+  try {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVanu8LdnHgU2k9n1unEiBC13yO/eizEIHWq+8+OZURE');
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+  } catch (e) {
+    console.log('无法播放提示音');
+  }
+}
+
+/* 页面加载时恢复所有提醒 */
+function restoreReminders() {
+  try {
+    SCH_DAYS.forEach(day => {
+      schData[day].forEach(item => {
+        item._day = day;
+        if (item.reminderEnabled && item.reminderTime) {
+          try {
+            const reminderDate = new Date(item.reminderTime);
+            const now = new Date();
+            const delay = reminderDate.getTime() - now.getTime();
+            if (delay > 0) scheduleReminder(item);
+          } catch(e) {}
+        }
+      });
+    });
+    requestNotificationPermission();
+    setInterval(checkStoredReminders, 60000);
+  } catch(e) { /* 提醒功能出错不影响主功能 */ }
+}
+
+/* 今日高亮 */
+function highlightToday() {
+  const dow = new Date().getDay();
+  const map = {1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat',0:'sun'};
+  const key = map[dow];
+  if (!key) return;
+  const th = document.getElementById('th-' + key);
+  if (th) th.classList.add('today-col');
+  document.querySelectorAll('.day-col[data-day="' + key + '"]').forEach(cell => {
+    cell.classList.add('today-col');
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  数据保存 / 加载 / 导出
+// ══════════════════════════════════════════════════
+
+/* 静默自动保存日程数据（不弹 Toast，操作后自动触发） */
+function autoSaveSchData() {
+  try {
+    const raw = localStorage.getItem('schedule_manager_data');
+    const data = raw ? JSON.parse(raw) : {};
+    data['__sch_data__']    = JSON.stringify(schData);
+    data['__sch_item_id__'] = schItemId;
+    localStorage.setItem('schedule_manager_data', JSON.stringify(data));
+  } catch(e) { /* 静默忽略（如 localStorage 不可用） */ }
+}
+
+function saveData() {
+  const data = {};
+
+
+  // 表头
+  data['__meta_period__']      = document.getElementById('meta-period').value;
+  data['__meta_create_date__'] = document.getElementById('meta-create-date').value;
+
+  // 任务行 ID 列表
+  const taskIds = [];
+  document.querySelectorAll('#task-tbody tr').forEach(tr => {
+    const m = tr.id.match(/task-row-(\d+)/);
+    if (m) taskIds.push(Number(m[1]));
+  });
+  data['__task_ids__']       = JSON.stringify(taskIds);
+  data['__task_row_count__'] = taskRowCount;
+
+  // 任务字段
+  document.querySelectorAll('[data-key]').forEach(el => {
+    data[el.dataset.key] = el.value;
+  });
+
+  // 日程数据
+  data['__sch_data__']    = JSON.stringify(schData);
+  data['__sch_item_id__'] = schItemId;
+
+  try {
+    localStorage.setItem('schedule_manager_data', JSON.stringify(data));
+    showToast('✅ 数据已保存');
+  } catch(e) {
+    showToast('⚠️ 保存失败（浏览器不支持本地存储），请用导出JSON备份');
+  }
+}
+
+function loadData() {
+  let raw;
+  try { raw = localStorage.getItem('schedule_manager_data'); } catch(e) { showToast('⚠️ 无法读取本地存储'); return; }
+  if (!raw) { showToast('暂无已保存的数据'); return; }
+
+  try {
+    const data = JSON.parse(raw);
+
+    // 表头
+    if (data['__meta_period__'])      document.getElementById('meta-period').value      = data['__meta_period__'];
+    if (data['__meta_create_date__']) document.getElementById('meta-create-date').value = data['__meta_create_date__'];
+
+    // 重建任务行
+    const taskIdsRaw = data['__task_ids__'];
+    if (taskIdsRaw) {
+      document.getElementById('task-tbody').innerHTML = '';
+      taskRowCount = 0;
+      JSON.parse(taskIdsRaw).forEach(id => {
+        taskRowCount = Math.max(taskRowCount, id);
+        const tbody = document.getElementById('task-tbody');
+        const tr = document.createElement('tr');
+        tr.id = `task-row-${id}`;
+        tr.innerHTML = `
+          <td class="num">${id}</td>
+          <td><input class="cell-input" data-key="t${id}_name" placeholder="" style="text-align:left"/></td>
+          <td><input class="cell-input" data-key="t${id}_date" type="date" style="text-align:center"/></td>
+          <td id="t${id}_urgency_td" class="p-mid">
+            <select class="cell-select" data-key="t${id}_urgency" onchange="updateUrgency(this)">
+              <option value="高">高</option>
+              <option value="中" selected>中</option>
+              <option value="低">低</option>
+            </select>
+          </td>
+          <td>
+            <div class="progress-wrapper">
+              <div class="progress-bar"><div class="progress-fill" id="progress-fill-${id}" style="width:0%"></div></div>
+              <div class="progress-text" id="progress-text-${id}">0%</div>
+            </div>
+            <input type="range" min="0" max="100" value="0"
+                   oninput="updateProgress(this,${id})"
+                   data-key="t${id}_progress"
+                   style="width:100%;margin-top:4px;">
+          </td>
+          <td><textarea class="cell-input" data-key="t${id}_note" rows="2" placeholder=""></textarea></td>
+          <td class="fixed">
+            <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteTaskRow(${id})">删除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 填充任务字段
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const v = data[el.dataset.key];
+      if (v !== undefined) el.value = v;
+    });
+
+    // 更新进度条显示
+    document.querySelectorAll('[data-key$="_progress"]').forEach(input => {
+      const m = input.dataset.key.match(/t(\d+)_progress/);
+      if (m) updateProgress(input, m[1]);
+    });
+
+    // 恢复紧急度颜色
+    document.querySelectorAll('.cell-select[data-key$="_urgency"]').forEach(sel => updateUrgency(sel));
+
+    updateSummary();
+    updateTaskCount();
+
+    // 恢复日程数据
+    const schRaw = data['__sch_data__'];
+    if (schRaw) {
+      const saved = JSON.parse(schRaw);
+      SCH_DAYS.forEach(d => { schData[d] = saved[d] || []; });
+      schItemId = data['__sch_item_id__'] || 0;
+      initScheduleCols();
+      // 恢复提醒
+      setTimeout(restoreReminders, 500);
+    }
+
+    showToast('✅ 数据已恢复');
+  } catch(err) {
+    showToast('加载失败：' + err.message);
+  }
+}
+
+// ── 导出 JSON ────────────────────────────────────
+function exportJSON() {
+  const data = {
+    __meta_period__:      document.getElementById('meta-period').value,
+    __meta_create_date__: document.getElementById('meta-create-date').value,
+    __sch_data__:         JSON.stringify(schData),
+    __sch_item_id__:      schItemId
+  };
+  const taskIds = [];
+  document.querySelectorAll('#task-tbody tr').forEach(tr => {
+    const m = tr.id.match(/task-row-(\d+)/);
+    if (m) taskIds.push(Number(m[1]));
+  });
+  data['__task_ids__']       = JSON.stringify(taskIds);
+  data['__task_row_count__'] = taskRowCount;
+  document.querySelectorAll('[data-key]').forEach(el => { data[el.dataset.key] = el.value; });
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '日程管理_' + new Date().toLocaleDateString('zh-CN').replace(/\//g,'') + '.json';
+  a.click();
+  showToast('📤 JSON已导出');
+}
+
+// ── 导入 JSON ────────────────────────────────────
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      localStorage.setItem('schedule_manager_data', e.target.result);
+      loadData();
+      showToast('✅ JSON已导入');
+    } catch(err) {
+      showToast('导入失败：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ── 导出日程 CSV ─────────────────────────────────
+function exportScheduleCSV() {
+  const rows = ['"日期","开始时间","结束时间","内容","状态"'];
+  SCH_DAYS.forEach((day, i) => {
+    schData[day].forEach(item => {
+      const status = item.done ? '已完成' : (item.delayed ? '顺延' : '进行中');
+      rows.push([
+        `"${SCH_DAY_NAMES[i]}"`,
+        `"${item.startTime||''}"`,
+        `"${item.endTime||''}"`,
+        `"${(item.content||'').replace(/\n/g,' ').replace(/"/g,'""')}"`,
+        `"${status}"`
+      ].join(','));
+    });
+  });
+  const blob = new Blob(['\uFEFF' + rows.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '每周日程_' + new Date().toLocaleDateString('zh-CN').replace(/\//g,'') + '.csv';
+  a.click();
+  showToast('📥 日程CSV已下载');
+}
+
+// ── 导出任务表 CSV ───────────────────────────────
+function exportCSV(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr => {
+    const cells = [];
+    tr.querySelectorAll('th,td').forEach(td => {
+      const input = td.querySelector('input,select,textarea');
+      const v = input ? input.value : td.innerText.trim();
+      cells.push('"' + v.replace(/\n/g,' ').replace(/"/g,'""') + '"');
+    });
+    rows.push(cells.join(','));
+  });
+  const blob = new Blob(['\uFEFF' + rows.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '_' + new Date().toLocaleDateString('zh-CN').replace(/\//g,'') + '.csv';
+  a.click();
+  showToast('📥 CSV已下载');
+}
+</script>
+</body>
+</html>

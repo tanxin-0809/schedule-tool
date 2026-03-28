@@ -309,6 +309,28 @@ tfoot td{padding:9px 10px;font-size:13px;font-weight:600;border:1px solid #3a6fa
   background:#eef2f7;cursor:pointer;font-size:13px;color:#555;
 }
 .delay-pick-cancel:hover{background:#d0dde8;}
+
+/* 任务表格序号单元格 */
+.task-idx-cell{
+  padding:4px 6px;vertical-align:middle;
+}
+.task-idx-num{
+  cursor:pointer;display:inline-block;min-width:20px;
+  border-radius:4px;padding:1px 4px;font-weight:700;color:#555;
+  transition:background .12s;
+}
+.task-idx-num:hover{color:#1F4E79;background:#eaf2fb;text-decoration:underline;}
+.task-idx-edit-input{
+  width:36px;text-align:center;border:1px solid #1F4E79;
+  border-radius:4px;font-size:12px;font-weight:700;padding:1px 4px;
+  outline:none;color:#1F4E79;
+}
+.task-move-btn{
+  background:none;border:none;cursor:pointer;color:#999;
+  font-size:11px;padding:0 2px;line-height:1;display:inline;
+}
+.task-move-btn:hover{color:#1F4E79;}
+.task-move-btn.disabled{visibility:hidden;}
 </style>
 </head>
 <body>
@@ -343,7 +365,7 @@ tfoot td{padding:9px 10px;font-size:13px;font-weight:600;border:1px solid #3a6fa
     <table id="task-table">
       <thead>
         <tr>
-          <th style="width:44px">序号</th>
+          <th style="width:54px">序号<br><span style="font-size:10px;font-weight:400;opacity:.75">点击/▲▼</span></th>
           <th style="width:200px;text-align:left">任务名称</th>
           <th style="width:120px">完成时间</th>
           <th style="width:80px">紧急度</th>
@@ -468,8 +490,14 @@ function addTaskRow() {
   const tr = document.createElement('tr');
   tr.id = `task-row-${taskRowCount}`;
   const id = taskRowCount;
+  const rows = tbody.querySelectorAll('tr');
+  const total = rows.length + 1;
   tr.innerHTML = `
-    <td class="num">${id}</td>
+    <td class="num">
+      <button class="task-move-btn task-move-up" onclick="moveTaskRow(${id},-1)" ${total===1?'class="task-move-btn disabled"':''}>▲</button>
+      <span class="task-idx-num" onclick="startEditTaskIdx(this,${id},${total})">${total}</span>
+      <button class="task-move-btn task-move-down" onclick="moveTaskRow(${id},1)" disabled>▼</button>
+    </td>
     <td><input class="cell-input" data-key="t${id}_name" placeholder="" style="text-align:left"/></td>
     <td><input class="cell-input" data-key="t${id}_date" type="date" style="text-align:center"/></td>
     <td id="t${id}_urgency_td" class="p-mid">
@@ -1588,6 +1616,100 @@ function exportCSV(tableId, filename) {
   a.click();
   showToast('📥 CSV已下载');
 }
+
+// ── 任务序号内联编辑 ───────────────────────────────────
+function startEditTaskIdx(spanEl, id, total) {
+  if (spanEl.querySelector('input')) return;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'task-idx-edit-input';
+  input.min = 1;
+  input.max = total;
+  input.value = spanEl.textContent;
+  spanEl.textContent = '';
+  spanEl.appendChild(input);
+  input.focus();
+  input.select();
+
+  function commit() {
+    const val = parseInt(input.value);
+    if (!isNaN(val) && val >= 1 && val <= total) {
+      moveTaskRowToPos(id, val - 1);
+    } else {
+      refreshTaskIdx();
+    }
+  }
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { refreshTaskIdx(); }
+  });
+  input.addEventListener('blur', commit);
+}
+
+// 刷新序号显示
+function refreshTaskIdx() {
+  const tbody = document.getElementById('task-tbody');
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach((row, idx) => {
+    const numSpan = row.querySelector('.task-idx-num');
+    if (numSpan) numSpan.textContent = idx + 1;
+  });
+  updateMoveButtons();
+}
+
+// 更新上移/下移按钮可见性
+function updateMoveButtons() {
+  const tbody = document.getElementById('task-tbody');
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach((row, idx) => {
+    const upBtn = row.querySelector('.task-move-up');
+    const downBtn = row.querySelector('.task-move-down');
+    if (upBtn) upBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+    if (downBtn) downBtn.style.visibility = idx === rows.length - 1 ? 'hidden' : 'visible';
+  });
+}
+
+// 上移/下移一行
+function moveTaskRow(id, dir) {
+  const tbody = document.getElementById('task-tbody');
+  const row = document.getElementById(`task-row-${id}`);
+  if (!row) return;
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const idx = rows.indexOf(row);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= rows.length) return;
+  if (dir === 1) {
+    row.parentNode.insertBefore(rows[newIdx + 1], row);
+  } else {
+    row.parentNode.insertBefore(row, rows[newIdx]);
+  }
+  refreshTaskIdx();
+}
+
+// 移动到指定位置
+function moveTaskRowToPos(id, targetPos) {
+  const tbody = document.getElementById('task-tbody');
+  const row = document.getElementById(`task-row-${id}`);
+  if (!row) return;
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const currentPos = rows.indexOf(row);
+  if (currentPos === targetPos) { refreshTaskIdx(); return; }
+  row.parentNode.removeChild(row);
+  if (targetPos >= rows.length) {
+    tbody.appendChild(row);
+  } else {
+    tbody.insertBefore(row, rows[targetPos]);
+  }
+  refreshTaskIdx();
+}
+
+// 页面加载后初始化按钮状态
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    updateMoveButtons();
+  }, 100);
+});
 </script>
 </body>
 </html>

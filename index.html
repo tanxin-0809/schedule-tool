@@ -414,6 +414,17 @@ SCH_DAYS.forEach(d => schData[d] = []);
 let schItemId = 0;
 
 // ══════════════════════════════════════════════════
+//  存储Key管理（支持多文件独立存储）
+// ══════════════════════════════════════════════════
+function getStorageKey() {
+  // 根据当前文件名或URL生成唯一key
+  const filename = window.location.pathname.split('/').pop() || 'schedule_manager';
+  return 'schedule_manager_' + filename.replace(/\.[^/.]+$/, '');
+}
+const STORAGE_KEY_DATA = getStorageKey();
+const STORAGE_KEY_REMINDERS = STORAGE_KEY_DATA + '_reminders';
+
+// ══════════════════════════════════════════════════
 //  初始化
 // ══════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
@@ -422,7 +433,7 @@ window.addEventListener('DOMContentLoaded', () => {
   highlightToday();
   initScheduleCols();
   try {
-    if (localStorage.getItem('schedule_manager_data')) {
+    if (localStorage.getItem(STORAGE_KEY_DATA)) {
       loadData();
     }
   } catch(e) { /* localStorage 不可用时跳过，不影响页面正常使用 */ }
@@ -935,9 +946,9 @@ function deleteEvent(day, id) {
   if (!confirm('确定删除这条日程？')) return;
   cancelReminder(id);
   try {
-    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const reminders = JSON.parse(localStorage.getItem(STORAGE_KEY_REMINDERS) || '[]');
     const filtered = reminders.filter(r => r.id !== id);
-    localStorage.setItem('schedule_reminders', JSON.stringify(filtered));
+    localStorage.setItem(STORAGE_KEY_REMINDERS, JSON.stringify(filtered));
   } catch(e) {}
   schData[day] = schData[day].filter(i => i.id !== id);
   renderAllEvents();
@@ -1154,7 +1165,7 @@ function scheduleReminder(item) {
 /* 保存提醒到 localStorage */
 function saveReminderToStorage(item) {
   try {
-    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const reminders = JSON.parse(localStorage.getItem(STORAGE_KEY_REMINDERS) || '[]');
     const filtered = reminders.filter(r => r.id !== item.id);
     filtered.push({
       id: item.id,
@@ -1164,14 +1175,14 @@ function saveReminderToStorage(item) {
       endTime: item.endTime,
       reminderTime: item.reminderTime
     });
-    localStorage.setItem('schedule_reminders', JSON.stringify(filtered));
+    localStorage.setItem(STORAGE_KEY_REMINDERS, JSON.stringify(filtered));
   } catch(e) {}
 }
 
 /* 检查待触发的提醒 */
 function checkStoredReminders() {
   try {
-    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const reminders = JSON.parse(localStorage.getItem(STORAGE_KEY_REMINDERS) || '[]');
     const now = new Date();
     const toKeep = [];
     reminders.forEach(reminder => {
@@ -1186,7 +1197,7 @@ function checkStoredReminders() {
         toKeep.push(reminder);
       }
     });
-    localStorage.setItem('schedule_reminders', JSON.stringify(toKeep));
+    localStorage.setItem(STORAGE_KEY_REMINDERS, JSON.stringify(toKeep));
   } catch(e) {}
 }
 
@@ -1279,9 +1290,9 @@ function closeReminderModal(itemId) {
     delete reminderTimers[itemId];
   }
   try {
-    const reminders = JSON.parse(localStorage.getItem('schedule_reminders') || '[]');
+    const reminders = JSON.parse(localStorage.getItem(STORAGE_KEY_REMINDERS) || '[]');
     const filtered = reminders.filter(r => r.id !== itemId);
-    localStorage.setItem('schedule_reminders', JSON.stringify(filtered));
+    localStorage.setItem(STORAGE_KEY_REMINDERS, JSON.stringify(filtered));
   } catch(e) {}
 }
 
@@ -1361,11 +1372,11 @@ function highlightToday() {
 /* 静默自动保存日程数据（不弹 Toast，操作后自动触发） */
 function autoSaveSchData() {
   try {
-    const raw = localStorage.getItem('schedule_manager_data');
+    const raw = localStorage.getItem(STORAGE_KEY_DATA);
     const data = raw ? JSON.parse(raw) : {};
     data['__sch_data__']    = JSON.stringify(schData);
     data['__sch_item_id__'] = schItemId;
-    localStorage.setItem('schedule_manager_data', JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(data));
   } catch(e) { /* 静默忽略（如 localStorage 不可用） */ }
 }
 
@@ -1396,7 +1407,7 @@ function saveData() {
   data['__sch_item_id__'] = schItemId;
 
   try {
-    localStorage.setItem('schedule_manager_data', JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(data));
     showToast('✅ 数据已保存');
   } catch(e) {
     showToast('⚠️ 保存失败（浏览器不支持本地存储），请用导出JSON备份');
@@ -1405,7 +1416,7 @@ function saveData() {
 
 function loadData() {
   let raw;
-  try { raw = localStorage.getItem('schedule_manager_data'); } catch(e) { showToast('⚠️ 无法读取本地存储'); return; }
+  try { raw = localStorage.getItem(STORAGE_KEY_DATA); } catch(e) { showToast('⚠️ 无法读取本地存储'); return; }
   if (!raw) { showToast('暂无已保存的数据'); return; }
 
   try {
@@ -1522,7 +1533,7 @@ function importJSON(input) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      localStorage.setItem('schedule_manager_data', e.target.result);
+      localStorage.setItem(STORAGE_KEY_DATA, e.target.result);
       loadData();
       showToast('✅ JSON已导入');
     } catch(err) {

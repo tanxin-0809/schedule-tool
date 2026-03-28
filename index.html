@@ -285,6 +285,30 @@ tfoot td{padding:9px 10px;font-size:13px;font-weight:600;border:1px solid #3a6fa
   .sch-event-actions{display:none!important;}
   #sch-modal{display:none!important;}
 }
+
+/* 顺延日期选择弹窗 */
+#delay-pick-modal{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.4);z-index:2000;justify-content:center;align-items:center;
+}
+#delay-pick-modal.show{display:flex;}
+.delay-pick-box{
+  background:#fff;border-radius:10px;padding:24px 28px;min-width:300px;
+  box-shadow:0 8px 32px rgba(0,0,0,.22);
+}
+.delay-pick-box h3{margin:0 0 16px;font-size:16px;color:#1F4E79;font-weight:700;}
+.delay-day-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.delay-day-btn{
+  padding:9px 16px;border-radius:6px;border:1px solid #d0dde8;
+  background:#f0f6ff;cursor:pointer;font-size:14px;text-align:left;
+  transition:background .12s,border-color .12s;color:#1F4E79;font-weight:600;
+}
+.delay-day-btn:hover{background:#2E75B6;color:#fff;border-color:#2E75B6;}
+.delay-pick-cancel{
+  width:100%;padding:8px;border:none;border-radius:6px;
+  background:#eef2f7;cursor:pointer;font-size:13px;color:#555;
+}
+.delay-pick-cancel:hover{background:#d0dde8;}
 </style>
 </head>
 <body>
@@ -812,35 +836,75 @@ function toggleEventDone(day, id) {
   if (item) { item.done = !item.done; renderAllEvents(); autoSaveSchData(); }
 }
 
-/* 顺延到下一天（原日程保留，标记为已顺延；下一天创建副本） */
+/* 顺延——先弹窗让用户选目标日期 */
 function delayEvent(day, id) {
   const idx = SCH_DAYS.indexOf(day);
   if (idx >= SCH_DAYS.length - 1) { showToast('已是周日，无法顺延'); return; }
   const item = schData[day].find(i => i.id === id);
   if (!item) return;
 
-  const nextDay = SCH_DAYS[idx + 1];
-  const copyId = ++schItemId;
+  // 可选天 = 当天之后的所有天
+  const availableDays = SCH_DAYS.slice(idx + 1);
+  showDelayPicker(day, id, availableDays);
+}
 
-  // 在下一天创建副本，记录来源信息
+/* 顺延弹窗 */
+function showDelayPicker(fromDay, itemId, availableDays) {
+  let modal = document.getElementById('delay-pick-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'delay-pick-modal';
+    modal.innerHTML = `
+      <div class="delay-pick-box">
+        <h3>📅 选择顺延到哪天</h3>
+        <div class="delay-day-list" id="delay-day-list"></div>
+        <button class="delay-pick-cancel" onclick="closeDelayPicker()">取消</button>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  const list = document.getElementById('delay-day-list');
+  list.innerHTML = availableDays.map(d => {
+    const name = SCH_DAY_NAMES[SCH_DAYS.indexOf(d)];
+    return `<button class="delay-day-btn" onclick="doDelayEvent('${fromDay}',${itemId},'${d}')">${name}</button>`;
+  }).join('');
+
+  modal.classList.add('show');
+  // 点击遮罩关闭
+  modal.onclick = (e) => { if (e.target === modal) closeDelayPicker(); };
+}
+
+function closeDelayPicker() {
+  const modal = document.getElementById('delay-pick-modal');
+  if (modal) modal.classList.remove('show');
+}
+
+/* 执行顺延到指定目标天 */
+function doDelayEvent(fromDay, id, targetDay) {
+  closeDelayPicker();
+
+  const item = schData[fromDay].find(i => i.id === id);
+  if (!item) return;
+
+  const copyId = ++schItemId;
   const newItem = {
     ...item,
     id: copyId,
     delayed: false,
     done: false,
-    delayedFromDay: day,       // 来源天
-    delayedFromId: id,         // 来源ID
+    delayedFromDay: fromDay,
+    delayedFromId: id,
   };
-  schData[nextDay].push(newItem);
+  schData[targetDay].push(newItem);
 
-  // 原日程标记为已顺延，并记录目标副本
   item.delayed = true;
-  item.delayedToDay = nextDay;
+  item.delayedToDay = targetDay;
   item.delayedToId = copyId;
 
   renderAllEvents();
   autoSaveSchData();
-  showToast('已顺延至' + SCH_DAY_NAMES[idx + 1] + '，点击 ← 可撤销');
+  const targetName = SCH_DAY_NAMES[SCH_DAYS.indexOf(targetDay)];
+  showToast('已顺延至' + targetName + '，点击 ← 可撤销');
 }
 
 /* 撤销顺延（删除下一天副本，恢复原日程状态） */
